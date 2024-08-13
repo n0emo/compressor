@@ -120,7 +120,7 @@ const clap_plugin_t* create_plugin(const clap_plugin_factory_t* factory,
     }
 
     Compressor* compressor = malloc(sizeof(*compressor));
-    compressor-> host = host;
+    compressor->host = host;
     compressor->plugin = clap_plugin;
     compressor->plugin.plugin_data = compressor;
 
