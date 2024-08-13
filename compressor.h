@@ -60,3 +60,14 @@ bool param_write_clap_info(Param* param, clap_param_info_t* info, clap_id id);
 bool param_get_value(Param* param, double* value);
 bool param_display_value(Param* param, double value, char* display, size_t size);
 bool param_read_value_from_display(Param* param, const char* display, double* value);
+
+void params_init_mutexes(CompressorParams* params);
+void params_destroy_mutexes(CompressorParams* params);
+
+typedef struct Buffer {
+    uint32_t sample_count;
+    uint32_t slice_count;
+    float** slices;
+} Buffer;
+
+void compressor_process(Compressor* compressor, Buffer buffer);

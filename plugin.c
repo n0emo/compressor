@@ -103,9 +103,11 @@ void entry_deinit() {
 }
 
 const void* entry_get_factory(const char* factory_id) {
-    (void) factory_id;
+    if (strcmp(factory_id, CLAP_PLUGIN_FACTORY_ID) == 0) {
+        return &plugin_factory;
+    }
 
-    return &plugin_factory;
+    return NULL;
 }
 
 uint32_t get_plugin_count(const clap_plugin_factory_t* factory) {
@@ -137,13 +139,17 @@ const clap_plugin_t* create_plugin(const clap_plugin_factory_t* factory,
 }
 
 bool plugin_init(const clap_plugin_t* plugin) {
-    (void) plugin;
+    Compressor* compressor = plugin->plugin_data;
+    params_init_mutexes(&compressor->params);
 
     return true;
 }
 
 void plugin_destroy(const clap_plugin_t* plugin) {
-    (void) plugin;
+    Compressor* compressor = plugin->plugin_data;
+    params_destroy_mutexes(&compressor->params);
+
+    free(compressor);
 }
 
 bool plugin_activate(const clap_plugin_t* plugin, double sample_rate, uint32_t min_frames, uint32_t max_frames) {
@@ -175,8 +181,21 @@ void plugin_reset (const clap_plugin_t* plugin) {
 }
 
 clap_process_status plugin_process(const clap_plugin_t* plugin, const clap_process_t* process) {
-    (void) plugin;
-    (void) process;
+    //Compressor* compressor = plugin->plugin_data;
+
+    //for(size_t i = 0; i < process->frames_count; i++) {
+    //    for(size_t j = 0; j < process->audio_outputs->channel_count; j++) {
+    //        process->audio_outputs->data32[j][i] = process->audio_inputs->data32[j][i];
+    //    }
+    //}
+
+    //Buffer buffer = {
+    //    .slice_count = process->audio_inputs->channel_count,
+    //    .sample_count = process->frames_count,
+    //    .slices = process->audio_inputs->data32,
+    //};
+
+    //compressor_process(compressor, buffer);
 
     return CLAP_PROCESS_CONTINUE;
 }
@@ -204,14 +223,20 @@ uint32_t audio_ports_count(const clap_plugin_t* plugin, bool is_input) {
     return 1;
 }
 
-bool audio_ports_get(const clap_plugin_t* plugin, uint32_t index, bool is_input, clap_audio_port_info_t* port_info) {
+bool audio_ports_get(const clap_plugin_t* plugin, uint32_t index, bool is_input, clap_audio_port_info_t* info) {
     (void) plugin;
-    (void) index;
     (void) is_input;
 
-    port_info->id = 0;
-    port_info->channel_count = 2;
-    snprintf(port_info->name, sizeof(port_info->name), "%s", "Compressor port");
+    if (index > 0) {
+        return false;
+    }
+
+    info->id = 0;
+    info->channel_count = 2;
+    info->flags = CLAP_AUDIO_PORT_IS_MAIN;
+    info->port_type = CLAP_PORT_STEREO;
+    info->in_place_pair = CLAP_INVALID_ID;
+    snprintf(info->name, sizeof(info->name), "%s", "Compressor port");
 
     return true;
 }

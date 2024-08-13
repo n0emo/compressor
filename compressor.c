@@ -10,7 +10,7 @@
 #define DB_MINUS_INFINITY -100.0f
 
 float db_to_gain(float dbs) {
-    if(dbs >= DB_MINUS_INFINITY) {
+    if (dbs >= DB_MINUS_INFINITY) {
         return powf(10.0f, dbs * 0.05f);
     } else {
         return 0.0f;
@@ -23,8 +23,6 @@ Param float_param(const char* name, FloatParam data) {
     param.name = name;
     param.kind = PARAM_FLOAT;
     param.data = (ParamData) { .as_float = data };
-    param.mutex = malloc(sizeof(*param.mutex));
-    mtx_init(param.mutex, PTHREAD_MUTEX_DEFAULT);
 
     return param;
 }
@@ -109,3 +107,28 @@ Compressor* compressor_create() {
     return compressor;
 }
 
+void params_init_mutexes(CompressorParams* params) {
+    for (size_t i = 0; i < params->count; i++) {
+        mtx_t* mutex = calloc(1, sizeof(mtx_t));
+        mtx_init(mutex, mtx_plain);
+        params->items[i].mutex = mutex;
+    }
+}
+
+void params_destroy_mutexes(CompressorParams* params) {
+    for (size_t i = 0; i < params->count; i++) {
+        mtx_t* mutex = params->items[i].mutex;
+        mtx_destroy(mutex);
+        free(mutex);
+    }
+}
+
+void compressor_process(Compressor* compressor, Buffer buffer) {
+    (void) compressor;
+
+    for (size_t i = 0; i < buffer.sample_count; i++) {
+        for (size_t j = 0; j < buffer.slice_count; j++) {
+            buffer.slices[j][i] *= 0.1;
+        }
+    }
+}
