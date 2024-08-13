@@ -6,9 +6,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-bool entry_init(const char* path);
-void entry_deinit();
-const void* entry_get_factory(const char* factory_id);
+#include "compressor.h"
+
+static bool entry_init(const char* path);
+static void entry_deinit();
+static const void* entry_get_factory(const char* factory_id);
 
 const clap_plugin_entry_t clap_entry = {
     .init = entry_init,
@@ -17,9 +19,9 @@ const clap_plugin_entry_t clap_entry = {
     .clap_version = CLAP_VERSION_INIT,
 };
 
-uint32_t get_plugin_count(const clap_plugin_factory_t* factory);
-const clap_plugin_descriptor_t* get_plugin_descriptor(const clap_plugin_factory_t* factory, uint32_t index);
-const clap_plugin_t * create_plugin(const clap_plugin_factory_t* factory,
+static uint32_t get_plugin_count(const clap_plugin_factory_t* factory);
+static const clap_plugin_descriptor_t* get_plugin_descriptor(const clap_plugin_factory_t* factory, uint32_t index);
+static const clap_plugin_t * create_plugin(const clap_plugin_factory_t* factory,
                                     const clap_host_t* host, const char* plugin_id);
 
 static const clap_plugin_factory_t plugin_factory = {
@@ -42,16 +44,16 @@ static const clap_plugin_descriptor_t plugin_descriptor = {
     .url = "https://github.com/n0emo/compressor",
 };
 
-bool plugin_init(const clap_plugin_t* plugin);
-void plugin_destroy(const clap_plugin_t* plugin);
-bool plugin_activate(const clap_plugin_t* plugin, double sample_rate, uint32_t min_frames, uint32_t max_frames);
-void plugin_deactivate(const clap_plugin_t* plugin);
-bool plugin_start_processing(const clap_plugin_t* plugin);
-void plugin_stop_processing(const clap_plugin_t* plugin);
-void plugin_reset (const clap_plugin_t* plugin);
-clap_process_status plugin_process(const clap_plugin_t* plugin, const clap_process_t* process);
-const void* plugin_get_extension(const clap_plugin_t* plugin, const char* id);
-void plugin_on_main_thread(const clap_plugin_t* plugin);
+static bool plugin_init(const clap_plugin_t* plugin);
+static void plugin_destroy(const clap_plugin_t* plugin);
+static bool plugin_activate(const clap_plugin_t* plugin, double sample_rate, uint32_t min_frames, uint32_t max_frames);
+static void plugin_deactivate(const clap_plugin_t* plugin);
+static bool plugin_start_processing(const clap_plugin_t* plugin);
+static void plugin_stop_processing(const clap_plugin_t* plugin);
+static void plugin_reset (const clap_plugin_t* plugin);
+static clap_process_status plugin_process(const clap_plugin_t* plugin, const clap_process_t* process);
+static const void* plugin_get_extension(const clap_plugin_t* plugin, const char* id);
+static void plugin_on_main_thread(const clap_plugin_t* plugin);
 
 static const clap_plugin_t clap_plugin = {
     .desc = &plugin_descriptor,
@@ -67,18 +69,29 @@ static const clap_plugin_t clap_plugin = {
     .on_main_thread = plugin_on_main_thread,
 };
 
-typedef struct Compressor {
-    clap_plugin_t plugin;
-    const clap_host_t* host;
-    float sample_rate;
-} Compressor;
-
-uint32_t audio_ports_count(const clap_plugin_t* plugin, bool is_input);
-bool audio_ports_get(const clap_plugin_t* plugin, uint32_t index, bool is_input, clap_audio_port_info_t* port_info);
+static uint32_t audio_ports_count(const clap_plugin_t* plugin, bool is_input);
+static bool audio_ports_get(const clap_plugin_t* plugin, uint32_t index, bool is_input, clap_audio_port_info_t* port_info);
 
 static const clap_plugin_audio_ports_t plugin_audio_ports = {
     .count = audio_ports_count,
     .get = audio_ports_get,
+};
+
+static uint32_t params_count(const clap_plugin_t* plugin);
+static void params_flush(const clap_plugin_t* plugin, const clap_input_events_t* input_events,
+                         const clap_output_events_t* output_events);
+static bool params_get_info(const clap_plugin_t* plugin, uint32_t index, clap_param_info_t* info);
+static bool params_get_value(const clap_plugin_t* plugin, clap_id id, double* value);
+static bool params_value_to_text(const clap_plugin_t *, clap_id, double, char *, uint32_t);
+static bool params_text_to_value(const clap_plugin_t *, clap_id, const char *, double *);
+
+static const clap_plugin_params_t plugin_params = {
+    .count = params_count,
+    .flush = params_flush,
+    .get_info = params_get_info,
+    .get_value = params_get_value,
+    .value_to_text = params_value_to_text,
+    .text_to_value = params_text_to_value,
 };
 
 bool entry_init(const char* path) {
@@ -104,10 +117,6 @@ const clap_plugin_descriptor_t* get_plugin_descriptor(const clap_plugin_factory_
     (void) factory;
     (void) index;
 
-    if (index != 0) {
-        return NULL;
-    }
-
     return &plugin_descriptor;
 }
 
@@ -119,7 +128,7 @@ const clap_plugin_t* create_plugin(const clap_plugin_factory_t* factory,
         return NULL;
     }
 
-    Compressor* compressor = malloc(sizeof(*compressor));
+    Compressor* compressor = compressor_create();
     compressor->host = host;
     compressor->plugin = clap_plugin;
     compressor->plugin.plugin_data = compressor;
@@ -177,6 +186,8 @@ const void* plugin_get_extension(const clap_plugin_t* plugin, const char* id) {
 
     if (strcmp(id, CLAP_EXT_AUDIO_PORTS) == 0) {
         return &plugin_audio_ports;
+    } else if (strcmp(id, CLAP_EXT_PARAMS) == 0) {
+        return &plugin_params;
     }
 
     return NULL;
@@ -203,4 +214,56 @@ bool audio_ports_get(const clap_plugin_t* plugin, uint32_t index, bool is_input,
     snprintf(port_info->name, sizeof(port_info->name), "%s", "Compressor port");
 
     return true;
+}
+
+uint32_t params_count(const clap_plugin_t* plugin) {
+    Compressor* compressor = plugin->plugin_data;
+    return compressor->params.count;
+}
+
+void params_flush(const clap_plugin_t* plugin, const clap_input_events_t* input_events,
+           const clap_output_events_t* output_events) {
+    (void) plugin;
+    (void) input_events;
+    (void) output_events;
+    // TODO
+}
+
+bool params_get_info(const clap_plugin_t* plugin, uint32_t index, clap_param_info_t* info) {
+    Compressor* compressor = plugin->plugin_data;
+
+    if(index >= compressor->params.count) {
+        return false;
+    }
+
+    return param_write_clap_info(&compressor->params.items[index], info, index);
+}
+
+bool params_get_value(const clap_plugin_t* plugin, clap_id id, double* value) {
+    Compressor* compressor = plugin->plugin_data;
+
+    if(id >= compressor->params.count) {
+        return false;
+    }
+
+    return param_get_value(&compressor->params.items[id], value);
+}
+
+bool params_value_to_text(const clap_plugin_t* plugin, clap_id id, double value, char * display, uint32_t size) {
+    Compressor* compressor = plugin->plugin_data;
+
+    if(id >= compressor->params.count) {
+        return false;
+    }
+
+    return param_display_value(&compressor->params.items[id], value, display, size);
+}
+bool params_text_to_value(const clap_plugin_t* plugin, clap_id id, const char* display, double* value) {
+    Compressor* compressor = plugin->plugin_data;
+
+    if(id >= compressor->params.count) {
+        return false;
+    }
+
+    return param_read_value_from_display(&compressor->params.items[id], display, value);
 }

@@ -2,4 +2,8 @@
 
 mkdir -p build
 
-clang plugin.c -shared -g -Wall -Wextra -o ./build/compressor.clap
+gcc -g -Wall -Wextra -c compressor.c -o build/compressor.o
+gcc -g -Wall -Wextra -c plugin.c -o build/plugin.o
+gcc -g -Wall -Wextra build/*.o \
+    -lpthread \
+    -shared -o ./build/compressor.clap
