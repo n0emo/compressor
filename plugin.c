@@ -148,7 +148,6 @@ bool plugin_init(const clap_plugin_t* plugin) {
 void plugin_destroy(const clap_plugin_t* plugin) {
     Compressor* compressor = plugin->plugin_data;
     params_destroy_mutexes(&compressor->params);
-
     free(compressor);
 }
 
@@ -181,21 +180,21 @@ void plugin_reset (const clap_plugin_t* plugin) {
 }
 
 clap_process_status plugin_process(const clap_plugin_t* plugin, const clap_process_t* process) {
-    //Compressor* compressor = plugin->plugin_data;
+    Compressor* compressor = plugin->plugin_data;
 
-    //for(size_t i = 0; i < process->frames_count; i++) {
-    //    for(size_t j = 0; j < process->audio_outputs->channel_count; j++) {
-    //        process->audio_outputs->data32[j][i] = process->audio_inputs->data32[j][i];
-    //    }
-    //}
+    for(size_t i = 0; i < process->frames_count; i++) {
+        for(size_t j = 0; j < process->audio_outputs->channel_count; j++) {
+            process->audio_outputs->data32[j][i] = process->audio_inputs->data32[j][i];
+        }
+    }
 
-    //Buffer buffer = {
-    //    .slice_count = process->audio_inputs->channel_count,
-    //    .sample_count = process->frames_count,
-    //    .slices = process->audio_inputs->data32,
-    //};
+    Buffer buffer = {
+        .slice_count = process->audio_inputs->channel_count,
+        .sample_count = process->frames_count,
+        .slices = process->audio_inputs->data32,
+    };
 
-    //compressor_process(compressor, buffer);
+    compressor_process(compressor, buffer);
 
     return CLAP_PROCESS_CONTINUE;
 }

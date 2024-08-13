@@ -8,10 +8,13 @@
 
 #include <threads.h>
 
+#define MAX_PARAM_COUNT 64
+
 #define array_append(array, item) do { \
     if(array.count == array.capacity) { \
         size_t new_capacity = array.capacity == 0 ? 4 : array.capacity * 2; \
         array.items = realloc(array.items, new_capacity); \
+        array.capacity = new_capacity \
     } \
     array.items[array.count] = item; \
     array.count++; \
@@ -38,23 +41,23 @@ typedef struct Param {
     ParamData data;
     const char* id;
     const char* name;
-    mtx_t* mutex;
+    mtx_t mutex;
 } Param;
 
 typedef struct CompressorParams {
-    Param* items;
     size_t count;
-    size_t capacity;
+    Param items[MAX_PARAM_COUNT];
 } CompressorParams;
 
 typedef struct Compressor {
     clap_plugin_t plugin;
-    CompressorParams params;
     const clap_host_t* host;
     float sample_rate;
+    CompressorParams params;
 } Compressor;
 
 Compressor* compressor_create();
+void compressor_append_param(Compressor* compressor, Param param);
 
 bool param_write_clap_info(Param* param, clap_param_info_t* info, clap_id id);
 bool param_get_value(Param* param, double* value);

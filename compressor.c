@@ -6,6 +6,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <threads.h>
+#include <assert.h>
 
 #define DB_MINUS_INFINITY -100.0f
 
@@ -28,7 +29,7 @@ Param float_param(const char* name, FloatParam data) {
 }
 
 bool param_write_clap_info(Param* param, clap_param_info_t* info, clap_id id) {
-    mtx_lock(param->mutex);
+    mtx_lock(&param->mutex);
 
     info->id = id;
     strncpy(info->name, param->name, sizeof(info->name));
@@ -45,12 +46,12 @@ bool param_write_clap_info(Param* param, clap_param_info_t* info, clap_id id) {
        } break;
     }
 
-    mtx_unlock(param->mutex);
+    mtx_unlock(&param->mutex);
     return true;
 }
 
 bool param_get_value(Param *param, double *value) {
-    mtx_lock(param->mutex);
+    mtx_lock(&param->mutex);
 
     bool result = true;
     switch(param->kind) {
@@ -61,7 +62,7 @@ bool param_get_value(Param *param, double *value) {
             result = false;
     }
 
-    mtx_unlock(param->mutex);
+    mtx_unlock(&param->mutex);
     return result;
 }
 
@@ -96,39 +97,40 @@ bool param_read_value_from_display(Param* param, const char* display, double* va
 Compressor* compressor_create() {
     Compressor* compressor = calloc(1, sizeof(*compressor));
 
-    Param input_gain = float_param("Input gain", (FloatParam) {
-        .min = db_to_gain(-30.0f),
-        .max = db_to_gain(30.0f),
-        .default_value = db_to_gain(0.0f),
-    });
+    compressor_append_param(
+        compressor,
+        float_param("Input gain", (FloatParam) {
+            .min = db_to_gain(-30.0f),
+            .max = db_to_gain(30.0f),
+            .default_value = db_to_gain(0.0f),
+    }));
 
-    array_append(compressor->params, input_gain);
 
     return compressor;
 }
 
+void compressor_append_param(Compressor* compressor, Param param) {
+    assert(compressor->params.count < MAX_PARAM_COUNT);
+
+    compressor->params.items[compressor->params.count] = param;
+    compressor->params.count++;
+}
+
 void params_init_mutexes(CompressorParams* params) {
     for (size_t i = 0; i < params->count; i++) {
-        mtx_t* mutex = calloc(1, sizeof(mtx_t));
-        mtx_init(mutex, mtx_plain);
-        params->items[i].mutex = mutex;
+        mtx_init(&params->items[i].mutex, mtx_plain);
     }
 }
 
 void params_destroy_mutexes(CompressorParams* params) {
     for (size_t i = 0; i < params->count; i++) {
-        mtx_t* mutex = params->items[i].mutex;
-        mtx_destroy(mutex);
-        free(mutex);
+        mtx_destroy(&params->items[i].mutex);
     }
 }
 
 void compressor_process(Compressor* compressor, Buffer buffer) {
     (void) compressor;
+    (void) buffer;
 
-    for (size_t i = 0; i < buffer.sample_count; i++) {
-        for (size_t j = 0; j < buffer.slice_count; j++) {
-            buffer.slices[j][i] *= 0.1;
-        }
-    }
+    // TODO
 }
