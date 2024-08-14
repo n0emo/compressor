@@ -3,3 +3,4 @@ CompileFlags:
     - -xc
     - -Wall
     - -Wextra
+    - "-I../include/"
