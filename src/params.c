@@ -29,10 +29,9 @@ bool params_write_clap_info(CompressorParams* params, ParamId id, clap_param_inf
             return gain_write_clap_info(params->output_gain, info);
         case PARAM_ID_MIX:
             return percent_write_clap_info(params->mix, info);
-        default:
-            params_log_unknown_param(id);
-            return false;
     }
+    params_log_unknown_param(id);
+    return false;
 }
 
 bool params_get_value(CompressorParams* params, ParamId id, double* value) {
@@ -43,10 +42,9 @@ bool params_get_value(CompressorParams* params, ParamId id, double* value) {
             return gain_get_value(params->output_gain, value);
         case PARAM_ID_MIX:
             return percent_get_value(params->mix, value);
-        default:
-            params_log_unknown_param(id);
-            return false;
     }
+    params_log_unknown_param(id);
+    return false;
 }
 
 bool params_display_value(CompressorParams* params, ParamId id, double value, char* display, size_t size) {
@@ -58,10 +56,9 @@ bool params_display_value(CompressorParams* params, ParamId id, double value, ch
             return gain_display_value(value, display, size);
         case PARAM_ID_MIX:
             return percent_display_value(value, display, size);
-        default:
-            params_log_unknown_param(id);
-            return false;
     }
+    params_log_unknown_param(id);
+    return false;
 }
 
 bool params_read_value_from_display(CompressorParams* params, clap_id id, const char* display, double* value) {
@@ -73,10 +70,9 @@ bool params_read_value_from_display(CompressorParams* params, clap_id id, const 
             return gain_read_value_from_display(display, value);
         case PARAM_ID_MIX:
             return percent_read_value_from_display(display, value);
-        default:
-            params_log_unknown_param(id);
-            return false;
     }
+    params_log_unknown_param(id);
+    return false;
 }
 
 void params_log_unknown_param(ParamId id) {

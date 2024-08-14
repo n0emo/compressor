@@ -7,8 +7,8 @@ typedef enum ParamId {
     PARAM_ID_INPUT_GAIN = 0,
     PARAM_ID_OUTPUT_GAIN,
     PARAM_ID_MIX,
-    PARAM_ID_COUNT
 } ParamId;
+#define PARAM_ID_COUNT 3
 
 typedef struct ParamCommon {
     clap_id id;
