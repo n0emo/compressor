@@ -9,6 +9,8 @@ set -e
 
 $CC -c src/compressor.c -o build/compressor.o
 $CC -c src/plugin.c -o build/plugin.o
+$CC -c src/params.c -o build/params.o
+$CC -c src/util.c -o build/util.o
 
 $CC build/*.o \
     -lpthread \

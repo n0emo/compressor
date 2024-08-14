@@ -82,7 +82,7 @@ static uint32_t params_count(const clap_plugin_t* plugin);
 static void params_flush(const clap_plugin_t* plugin, const clap_input_events_t* input_events,
                          const clap_output_events_t* output_events);
 static bool params_get_info(const clap_plugin_t* plugin, uint32_t index, clap_param_info_t* info);
-static bool params_get_value(const clap_plugin_t* plugin, clap_id id, double* value);
+static bool plugin_params_get_value(const clap_plugin_t* plugin, clap_id id, double* value);
 static bool params_value_to_text(const clap_plugin_t *, clap_id, double, char *, uint32_t);
 static bool params_text_to_value(const clap_plugin_t *, clap_id, const char *, double *);
 
@@ -90,7 +90,7 @@ static const clap_plugin_params_t plugin_params = {
     .count = params_count,
     .flush = params_flush,
     .get_info = params_get_info,
-    .get_value = params_get_value,
+    .get_value = plugin_params_get_value,
     .value_to_text = params_value_to_text,
     .text_to_value = params_text_to_value,
 };
@@ -244,8 +244,8 @@ bool audio_ports_get(const clap_plugin_t* plugin, uint32_t index, bool is_input,
 }
 
 uint32_t params_count(const clap_plugin_t* plugin) {
-    Compressor* compressor = plugin->plugin_data;
-    return compressor->params.count;
+    (void) plugin;
+    return PARAM_ID_COUNT;
 }
 
 void params_flush(const clap_plugin_t* plugin, const clap_input_events_t* input_events,
@@ -258,40 +258,44 @@ void params_flush(const clap_plugin_t* plugin, const clap_input_events_t* input_
 
 bool params_get_info(const clap_plugin_t* plugin, uint32_t index, clap_param_info_t* info) {
     Compressor* compressor = plugin->plugin_data;
+    ParamId id = index;
 
-    if(index >= compressor->params.count) {
+    if(!params_is_valid_id(id)) {
         return false;
     }
 
-    return param_write_clap_info(&compressor->params.items[index], info, index);
+    return params_write_clap_info(&compressor->params, id, info);
 }
 
-bool params_get_value(const clap_plugin_t* plugin, clap_id id, double* value) {
+bool plugin_params_get_value(const clap_plugin_t* plugin, clap_id id, double* value) {
     Compressor* compressor = plugin->plugin_data;
+    ParamId param_id = id;
 
-    if(id >= compressor->params.count) {
+    if(!params_is_valid_id(param_id)) {
         return false;
     }
 
-    return param_get_value(&compressor->params.items[id], value);
+    return params_get_value(&compressor->params, param_id, value);
 }
 
 bool params_value_to_text(const clap_plugin_t* plugin, clap_id id, double value, char * display, uint32_t size) {
     Compressor* compressor = plugin->plugin_data;
+    ParamId param_id = id;
 
-    if(id >= compressor->params.count) {
+    if(!params_is_valid_id(param_id)) {
         return false;
     }
 
-    return param_display_value(&compressor->params.items[id], value, display, size);
+    return params_display_value(&compressor->params, param_id, value, display, size);
 }
 
 bool params_text_to_value(const clap_plugin_t* plugin, clap_id id, const char* display, double* value) {
     Compressor* compressor = plugin->plugin_data;
+    ParamId param_id = id;
 
-    if(id >= compressor->params.count) {
+    if(!params_is_valid_id(param_id)) {
         return false;
     }
 
-    return param_read_value_from_display(&compressor->params.items[id], display, value);
+    return params_read_value_from_display(&compressor->params, param_id, display, value);
 }
