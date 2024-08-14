@@ -32,7 +32,7 @@ bool param_write_clap_info(Param* param, clap_param_info_t* info, clap_id id) {
     mtx_lock(&param->mutex);
 
     info->id = id;
-    strncpy(info->name, param->name, sizeof(info->name));
+    strncpy(info->name, param->name, 256);
     // TODO: flags
 
     switch(param->kind) {
@@ -103,6 +103,7 @@ Compressor* compressor_create() {
             .min = db_to_gain(-30.0f),
             .max = db_to_gain(30.0f),
             .default_value = db_to_gain(0.0f),
+            .value = db_to_gain(-10.0f),
     }));
 
 
@@ -128,9 +129,12 @@ void params_destroy_mutexes(CompressorParams* params) {
     }
 }
 
-void compressor_process(Compressor* compressor, Buffer buffer) {
-    (void) compressor;
-    (void) buffer;
+void compressor_process(Compressor* compressor, Buffer* buffer) {
+    float gain = compressor->params.items[0].data.as_float.value;
 
-    // TODO
+    for (size_t i = 0; i < buffer->frame_count; i++) {
+        for (size_t channel = 0; channel < buffer->channel_count; channel++) {
+            buffer->data[channel][i] *= gain;
+        }
+    }
 }

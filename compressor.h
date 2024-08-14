@@ -68,9 +68,9 @@ void params_init_mutexes(CompressorParams* params);
 void params_destroy_mutexes(CompressorParams* params);
 
 typedef struct Buffer {
-    uint32_t sample_count;
-    uint32_t slice_count;
-    float** slices;
+    uint32_t channel_count;
+    uint32_t frame_count;
+    float** data;
 } Buffer;
 
-void compressor_process(Compressor* compressor, Buffer buffer);
+void compressor_process(Compressor* compressor, Buffer* buffer);

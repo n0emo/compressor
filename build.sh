@@ -1,9 +1,15 @@
 #!/bin/sh
 
+CC='gcc -std=c23 -g -Wall -Wextra'
+
 mkdir -p build
 
-gcc -g -Wall -Wextra -c compressor.c -o build/compressor.o
-gcc -g -Wall -Wextra -c plugin.c -o build/plugin.o
-gcc -g -Wall -Wextra build/*.o \
+set -x
+set -e
+
+$CC -c compressor.c -o build/compressor.o
+$CC -c plugin.c -o build/plugin.o
+
+$CC build/*.o \
     -lpthread \
     -shared -o ./build/compressor.clap

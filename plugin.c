@@ -182,19 +182,21 @@ void plugin_reset (const clap_plugin_t* plugin) {
 clap_process_status plugin_process(const clap_plugin_t* plugin, const clap_process_t* process) {
     Compressor* compressor = plugin->plugin_data;
 
-    for(size_t i = 0; i < process->frames_count; i++) {
-        for(size_t j = 0; j < process->audio_outputs->channel_count; j++) {
-            process->audio_outputs->data32[j][i] = process->audio_inputs->data32[j][i];
-        }
+    for(size_t channel = 0; channel < 2; channel++) {
+        memcpy(
+            process->audio_outputs->data32[channel],
+            process->audio_inputs->data32[channel],
+            process->frames_count * sizeof(float)
+        );
     }
 
     Buffer buffer = {
-        .slice_count = process->audio_inputs->channel_count,
-        .sample_count = process->frames_count,
-        .slices = process->audio_inputs->data32,
+        .channel_count = 2,
+        .frame_count = process->frames_count,
+        .data = process->audio_outputs[0].data32,
     };
 
-    compressor_process(compressor, buffer);
+    compressor_process(compressor, &buffer);
 
     return CLAP_PROCESS_CONTINUE;
 }
@@ -231,11 +233,11 @@ bool audio_ports_get(const clap_plugin_t* plugin, uint32_t index, bool is_input,
     }
 
     info->id = 0;
+    snprintf(info->name, sizeof(info->name), "%s", "Compressor Port");
     info->channel_count = 2;
     info->flags = CLAP_AUDIO_PORT_IS_MAIN;
     info->port_type = CLAP_PORT_STEREO;
     info->in_place_pair = CLAP_INVALID_ID;
-    snprintf(info->name, sizeof(info->name), "%s", "Compressor port");
 
     return true;
 }
@@ -282,6 +284,7 @@ bool params_value_to_text(const clap_plugin_t* plugin, clap_id id, double value,
 
     return param_display_value(&compressor->params.items[id], value, display, size);
 }
+
 bool params_text_to_value(const clap_plugin_t* plugin, clap_id id, const char* display, double* value) {
     Compressor* compressor = plugin->plugin_data;
 
