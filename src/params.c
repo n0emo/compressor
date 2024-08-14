@@ -75,6 +75,21 @@ bool params_read_value_from_display(CompressorParams* params, clap_id id, const 
     return false;
 }
 
+void params_set_value(CompressorParams* params, ParamId id, double value) {
+    switch(id) {
+        case PARAM_ID_INPUT_GAIN:
+            gain_set_value(&params->input_gain, value);
+            return;
+        case PARAM_ID_OUTPUT_GAIN:
+            gain_set_value(&params->output_gain, value);
+            return;
+        case PARAM_ID_MIX:
+            percent_set_value(&params->mix, value);
+            return;
+    }
+    params_log_unknown_param(id);
+}
+
 void params_log_unknown_param(ParamId id) {
     if(0 <= id && id < PARAM_ID_COUNT) {
         eprintf("Param ID %d is not handled\n", id);
@@ -140,3 +155,10 @@ bool percent_read_value_from_display(const char* display, double* value) {
     return true;
 }
 
+void gain_set_value(GainParam* param, float value) {
+    param->value = db_to_gain(value);
+}
+
+void percent_set_value(PercentParam* param, float value) {
+    param->value = value * 0.01f;
+}

@@ -14,3 +14,7 @@ float gain_to_db(float gain) {
     return log10f(max(gain, GAIN_MINUS_INFINITY)) * 20.0f;
 }
 
+float lerp(float a, float b, float t) {
+    return a * t + b * (1 - t);
+}
+

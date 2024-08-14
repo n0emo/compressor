@@ -8,4 +8,5 @@
 
 float db_to_gain(float dbs);
 float gain_to_db(float gain);
+float lerp(float a, float b, float t);
 

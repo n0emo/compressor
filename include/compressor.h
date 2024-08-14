@@ -26,3 +26,4 @@ typedef struct Buffer {
 } Buffer;
 
 void compressor_process(Compressor* compressor, Buffer* buffer);
+void compressor_handle_clap_event(Compressor* compressor, const clap_event_header_t* event_header);

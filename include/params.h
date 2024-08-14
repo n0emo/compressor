@@ -51,6 +51,7 @@ bool params_write_clap_info(CompressorParams* params, ParamId id, clap_param_inf
 bool params_get_value(CompressorParams* params, ParamId id, double* value);
 bool params_display_value(CompressorParams* params, ParamId id, double value, char* display, size_t size);
 bool params_read_value_from_display(CompressorParams* params, ParamId id, const char* display, double* value);
+void params_set_value(CompressorParams* params, ParamId id, double value);
 void params_log_unknown_param(ParamId id);
 
 bool gain_write_clap_info(GainParam param, clap_param_info_t* info);
@@ -65,3 +66,6 @@ bool percent_display_value(double value, char* display, size_t size);
 
 bool gain_read_value_from_display(const char* display, double* value);
 bool percent_read_value_from_display(const char* display, double* value);
+
+void gain_set_value(GainParam* param, float value);
+void percent_set_value(PercentParam* param, float value);

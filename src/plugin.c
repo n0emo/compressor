@@ -182,7 +182,8 @@ void plugin_reset (const clap_plugin_t* plugin) {
 clap_process_status plugin_process(const clap_plugin_t* plugin, const clap_process_t* process) {
     Compressor* compressor = plugin->plugin_data;
 
-    for(size_t channel = 0; channel < 2; channel++) {
+    float* data[process->audio_inputs->channel_count];
+    for (size_t channel = 0; channel < 2; channel++) {
         memcpy(
             process->audio_outputs->data32[channel],
             process->audio_inputs->data32[channel],
@@ -191,12 +192,31 @@ clap_process_status plugin_process(const clap_plugin_t* plugin, const clap_proce
     }
 
     Buffer buffer = {
-        .channel_count = 2,
-        .frame_count = process->frames_count,
-        .data = process->audio_outputs->data32,
+        .channel_count = process->audio_inputs->channel_count,
+        .data = data,
     };
 
-    compressor_process(compressor, &buffer);
+    size_t event_count = process->in_events->size(process->in_events);
+    size_t event_index = 0;
+
+    for (size_t frame = 0; frame < process->frames_count; ) {
+        size_t next_event_frame = process->frames_count;
+        if(event_index < event_count) {
+            const clap_event_header_t* event_header = process->in_events->get(process->in_events, event_index);
+            compressor_handle_clap_event(compressor, event_header);
+            next_event_frame = event_header->time;
+            event_index++;
+        }
+
+        for (size_t channel = 0; channel < 2; channel++) {
+            data[channel] = process->audio_outputs->data32[channel] + frame;
+        }
+        buffer.frame_count = next_event_frame - frame;
+
+        compressor_process(compressor, &buffer);
+
+        frame += next_event_frame;
+    }
 
     return CLAP_PROCESS_CONTINUE;
 }
