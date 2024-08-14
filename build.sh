@@ -1,6 +1,6 @@
 #!/bin/sh
 
-CC='gcc -std=c23 -g -Wall -Wextra -I include'
+CC='clang -std=c23 -g -Wall -Wextra -I include -fPIC'
 
 mkdir -p build
 

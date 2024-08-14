@@ -1,3 +1,4 @@
+#define CLAP_HAS_THREAD
 #include <clap/all.h>
 
 #include <stdbool.h>
@@ -12,7 +13,7 @@ static bool entry_init(const char* path);
 static void entry_deinit();
 static const void* entry_get_factory(const char* factory_id);
 
-const clap_plugin_entry_t clap_entry = {
+CLAP_EXPORT const clap_plugin_entry_t clap_entry = {
     .init = entry_init,
     .deinit = entry_deinit,
     .get_factory = entry_get_factory,
@@ -167,7 +168,6 @@ void plugin_deactivate(const clap_plugin_t* plugin) {
 
 bool plugin_start_processing(const clap_plugin_t* plugin) {
     (void) plugin;
-
     return true;
 }
 
@@ -193,7 +193,7 @@ clap_process_status plugin_process(const clap_plugin_t* plugin, const clap_proce
     Buffer buffer = {
         .channel_count = 2,
         .frame_count = process->frames_count,
-        .data = process->audio_outputs[0].data32,
+        .data = process->audio_outputs->data32,
     };
 
     compressor_process(compressor, &buffer);
@@ -206,7 +206,8 @@ const void* plugin_get_extension(const clap_plugin_t* plugin, const char* id) {
 
     if (strcmp(id, CLAP_EXT_AUDIO_PORTS) == 0) {
         return &plugin_audio_ports;
-    } else if (strcmp(id, CLAP_EXT_PARAMS) == 0) {
+    }
+    if (strcmp(id, CLAP_EXT_PARAMS) == 0) {
         return &plugin_params;
     }
 
