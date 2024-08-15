@@ -1,7 +1,6 @@
 #include "compressor.h"
 
 #include <clap/events.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <threads.h>
@@ -13,43 +12,25 @@ Compressor* compressor_create() {
     Compressor* compressor = calloc(1, sizeof(*compressor));
 
     compressor->params = (CompressorParams) {
-        .input_gain = {
-            .common = {
-                .id = PARAM_ID_INPUT_GAIN,
-                .name = "Input Gain",
-            },
-            .value = db_to_gain(-10.0f),
-            .default_value = db_to_gain(-10.0f),
-            .min = db_to_gain(-30.0f),
-            .max = db_to_gain(30.0f),
-        },
-
-        .output_gain = {
-            .common = {
-                .id = PARAM_ID_OUTPUT_GAIN,
-                .name = "Output Gain",
-            },
-            .value = db_to_gain(-10.0f),
-            .default_value = db_to_gain(-10.0f),
-            .min = db_to_gain(-30.0f),
-            .max = db_to_gain(30.0f),
-        },
-
-        .mix = { 
-            .common = {
-                .id = PARAM_ID_MIX,
-                .name = "Mix",
-            },
-            .default_value = 1,
-            .value = 1,
-        },
+        .threshold = gain_param(PARAM_ID_THRESHOLD, "Threshold", 0.0f, -30.0f, 10.0f),
+        .attack = float_param(PARAM_ID_ATTACK, "Attack", 10, 1, 100, " ms"),
+        .release = float_param(PARAM_ID_RELEASE, "Release", 10, 1, 100, " ms"),
+        .ratio = float_param(PARAM_ID_RATIO, "ratio", 1, 0, 4, ""),
+        .output_gain = gain_param(PARAM_ID_OUTPUT_GAIN, "Output", 0.0f, -30.0f, 30.0f),
+        .mix = percent_param(PARAM_ID_MIX, "Mix", 1),
     };
+
+    compressor->params.param_map[PARAM_ID_THRESHOLD] = (Param*) &compressor->params.threshold;
+    compressor->params.param_map[PARAM_ID_ATTACK] = (Param*) &compressor->params.attack;
+    compressor->params.param_map[PARAM_ID_RELEASE] = (Param*) &compressor->params.release;
+    compressor->params.param_map[PARAM_ID_RATIO] = (Param*) &compressor->params.ratio;
+    compressor->params.param_map[PARAM_ID_OUTPUT_GAIN] = (Param*) &compressor->params.output_gain;
+    compressor->params.param_map[PARAM_ID_MIX] = (Param*) &compressor->params.mix;
 
     return compressor;
 }
 
 void compressor_process(Compressor* compressor, Buffer* buffer) {
-    float input_gain = compressor->params.input_gain.value;
     float output_gain = compressor->params.output_gain.value;
     float mix = compressor->params.mix.value;
 
@@ -58,7 +39,6 @@ void compressor_process(Compressor* compressor, Buffer* buffer) {
             const float input = buffer->data[channel][i];
 
             float s = input;
-            s *= input_gain;
             s *= output_gain;
 
             const float output = s;
@@ -72,7 +52,12 @@ void compressor_handle_clap_event(Compressor* compressor, const clap_event_heade
     switch(event_header->type) {
         case CLAP_EVENT_PARAM_VALUE: {
             const clap_event_param_value_t* event = (const clap_event_param_value_t*) event_header;
-            params_set_value(&compressor->params, event->param_id, event->value);
+            if(!params_is_valid_id(event->param_id)) {
+                break;
+            }
+
+            Param* p = compressor->params.param_map[event->param_id];
+            p->methods.set_value(p, event->value);
         } break;
     }
 }

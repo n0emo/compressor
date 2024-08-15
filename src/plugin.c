@@ -34,9 +34,9 @@ static const clap_plugin_factory_t plugin_factory = {
 static const clap_plugin_descriptor_t plugin_descriptor = {
     .clap_version = CLAP_VERSION_INIT,
     .id = "org.n0emo.compressor",
-    .name = "_n0emo's Compressor",
+    .name = "n0emo's Compressor",
     .description = "Simple compressor written in C",
-    .vendor = "_n0emo",
+    .vendor = "n0emo",
     .version = "0.1.0",
     .features = (const char*[]) {
         CLAP_PLUGIN_FEATURE_AUDIO_EFFECT,
@@ -284,7 +284,8 @@ bool params_get_info(const clap_plugin_t* plugin, uint32_t index, clap_param_inf
         return false;
     }
 
-    return params_write_clap_info(&compressor->params, id, info);
+    Param* p = compressor->params.param_map[id];
+    return p->methods.write_clap_info(p, info);
 }
 
 bool plugin_params_get_value(const clap_plugin_t* plugin, clap_id id, double* value) {
@@ -295,7 +296,8 @@ bool plugin_params_get_value(const clap_plugin_t* plugin, clap_id id, double* va
         return false;
     }
 
-    return params_get_value(&compressor->params, param_id, value);
+    Param* p = compressor->params.param_map[id];
+    return p->methods.get_value(p, value);
 }
 
 bool params_value_to_text(const clap_plugin_t* plugin, clap_id id, double value, char * display, uint32_t size) {
@@ -306,7 +308,8 @@ bool params_value_to_text(const clap_plugin_t* plugin, clap_id id, double value,
         return false;
     }
 
-    return params_display_value(&compressor->params, param_id, value, display, size);
+    Param* p = compressor->params.param_map[id];
+    return p->methods.display_value(p, value, display, size);
 }
 
 bool params_text_to_value(const clap_plugin_t* plugin, clap_id id, const char* display, double* value) {
@@ -317,5 +320,6 @@ bool params_text_to_value(const clap_plugin_t* plugin, clap_id id, const char* d
         return false;
     }
 
-    return params_read_value_from_display(&compressor->params, param_id, display, value);
+    Param* p = compressor->params.param_map[id];
+    return p->methods.read_value_from_display(p, display, value);
 }

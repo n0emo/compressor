@@ -6,159 +6,207 @@
 #include "util.h"
 
 void params_init_mutexes(CompressorParams* params) {
-    mtx_init(&params->input_gain.common.mutex, mtx_plain);
-    mtx_init(&params->output_gain.common.mutex, mtx_plain);
-    mtx_init(&params->mix.common.mutex, mtx_plain);
+    mtx_init(&params->threshold.base.mutex, mtx_plain);
+    mtx_init(&params->attack.base.mutex, mtx_plain);
+    mtx_init(&params->release.base.mutex, mtx_plain);
+    mtx_init(&params->ratio.base.mutex, mtx_plain);
+    mtx_init(&params->output_gain.base.mutex, mtx_plain);
+    mtx_init(&params->mix.base.mutex, mtx_plain);
 }
 
 void params_destroy_mutexes(CompressorParams* params) {
-    mtx_destroy(&params->input_gain.common.mutex);
-    mtx_destroy(&params->output_gain.common.mutex);
-    mtx_destroy(&params->mix.common.mutex);
+    mtx_destroy(&params->threshold.base.mutex);
+    mtx_destroy(&params->attack.base.mutex);
+    mtx_destroy(&params->release.base.mutex);
+    mtx_destroy(&params->ratio.base.mutex);
+    mtx_destroy(&params->output_gain.base.mutex);
+    mtx_destroy(&params->mix.base.mutex);
 }
 
 bool params_is_valid_id(clap_id id) {
     return 0 <= id && id < PARAM_ID_COUNT;
 }
 
-bool params_write_clap_info(CompressorParams* params, ParamId id, clap_param_info_t* info) {
-    switch(id) {
-        case PARAM_ID_INPUT_GAIN: 
-            return gain_write_clap_info(params->input_gain, info);
-        case PARAM_ID_OUTPUT_GAIN:
-            return gain_write_clap_info(params->output_gain, info);
-        case PARAM_ID_MIX:
-            return percent_write_clap_info(params->mix, info);
-    }
-    params_log_unknown_param(id);
-    return false;
+FloatParam float_param(ParamId id, const char* name, float default_value, float min, float max, const char* unit) {
+    return (FloatParam) {
+        .base = {
+            .id = id,
+            .name = name,
+            .methods = {
+                .write_clap_info = float_write_clap_info,
+                .get_value = float_get_value,
+                .set_value = float_set_value,
+                .display_value = float_display_value,
+                .read_value_from_display = float_read_value_from_display,
+            },
+        },
+        .default_value = default_value,
+        .value = default_value,
+        .min = min,
+        .max = max,
+        .unit = unit,
+    };
 }
 
-bool params_get_value(CompressorParams* params, ParamId id, double* value) {
-    switch(id) {
-        case PARAM_ID_INPUT_GAIN:
-            return gain_get_value(params->input_gain, value);
-        case PARAM_ID_OUTPUT_GAIN:
-            return gain_get_value(params->output_gain, value);
-        case PARAM_ID_MIX:
-            return percent_get_value(params->mix, value);
-    }
-    params_log_unknown_param(id);
-    return false;
+GainParam gain_param(ParamId id, const char* name, float default_value, float min, float max) {
+    default_value = db_to_gain(default_value);
+    min = db_to_gain(min);
+    max = db_to_gain(max);
+
+    return (GainParam) {
+        .base = {
+            .id = id,
+            .name = name,
+            .methods = {
+                .write_clap_info = gain_write_clap_info,
+                .get_value = gain_get_value,
+                .set_value = gain_set_value,
+                .display_value = gain_display_value,
+                .read_value_from_display = gain_read_value_from_display,
+            },
+        },
+        .default_value = default_value,
+        .value = default_value,
+        .min = min,
+        .max = max,
+    };
 }
 
-bool params_display_value(CompressorParams* params, ParamId id, double value, char* display, size_t size) {
-    (void) params;
-
-    switch(id) {
-        case PARAM_ID_INPUT_GAIN:
-        case PARAM_ID_OUTPUT_GAIN:
-            return gain_display_value(value, display, size);
-        case PARAM_ID_MIX:
-            return percent_display_value(value, display, size);
-    }
-    params_log_unknown_param(id);
-    return false;
+PercentParam percent_param(ParamId id, const char* name, float default_value) {
+    return (PercentParam) {
+        .base = {
+            .id = id,
+            .name = name,
+            .methods = {
+                .write_clap_info = percent_write_clap_info,
+                .get_value = percent_get_value,
+                .set_value = percent_set_value,
+                .display_value = percent_display_value,
+                .read_value_from_display = percent_read_value_from_display,
+            },
+        },
+        .default_value = default_value,
+        .value = default_value,
+    };
 }
 
-bool params_read_value_from_display(CompressorParams* params, clap_id id, const char* display, double* value) {
-    (void) params;
+bool gain_write_clap_info(const Param* base, clap_param_info_t* info) {
+    GainParam* param = (GainParam*) base;
 
-    switch(id) {
-        case PARAM_ID_INPUT_GAIN:
-        case PARAM_ID_OUTPUT_GAIN:
-            return gain_read_value_from_display(display, value);
-        case PARAM_ID_MIX:
-            return percent_read_value_from_display(display, value);
-    }
-    params_log_unknown_param(id);
-    return false;
-}
-
-void params_set_value(CompressorParams* params, ParamId id, double value) {
-    switch(id) {
-        case PARAM_ID_INPUT_GAIN:
-            gain_set_value(&params->input_gain, value);
-            return;
-        case PARAM_ID_OUTPUT_GAIN:
-            gain_set_value(&params->output_gain, value);
-            return;
-        case PARAM_ID_MIX:
-            percent_set_value(&params->mix, value);
-            return;
-    }
-    params_log_unknown_param(id);
-}
-
-void params_log_unknown_param(ParamId id) {
-    if(0 <= id && id < PARAM_ID_COUNT) {
-        eprintf("Param ID %d is not handled\n", id);
-    } else {
-        eprintf("Unknown Param ID\n");
-    }
-}
-
-bool gain_write_clap_info(GainParam param, clap_param_info_t* info) {
-    memset(info, 0, sizeof(*info));
-
-    common_write_clap_info(param.common, info);
-    info->default_value = param.default_value;
-    info->min_value = gain_to_db(param.min);
-    info->max_value = gain_to_db(param.max);
+    base_write_clap_info(&param->base, info);
+    info->default_value = param->default_value;
+    info->min_value = gain_to_db(param->min);
+    info->max_value = gain_to_db(param->max);
 
     return true;
 }
 
-bool percent_write_clap_info(PercentParam param, clap_param_info_t* info) {
-    memset(info, 0, sizeof(*info));
+bool percent_write_clap_info(const Param* base, clap_param_info_t* info) {
+    PercentParam* param = (PercentParam*) base;
 
-    common_write_clap_info(param.common, info);
-    info->default_value = param.default_value;
+    base_write_clap_info(&param->base, info);
+    info->default_value = param->default_value;
     info->min_value = 0;
     info->max_value = 100;
 
     return true;
 }
 
-void common_write_clap_info(ParamCommon common, clap_param_info_t* info) {
-    info->id = common.id;
-    snprintf(info->name, sizeof(info->name), "%s", common.name);
-}
+bool float_write_clap_info(const Param* base, clap_param_info_t* info) {
+    FloatParam* param = (FloatParam*) base;
 
-bool gain_get_value(GainParam param, double* value) {
-    *value = gain_to_db(param.value);
+    base_write_clap_info(&param->base, info);
+    info->default_value = param->default_value;
+    info->min_value = param->min;
+    info->max_value = param->max;
+
     return true;
 }
 
-bool percent_get_value(PercentParam param, double* value) {
-    *value = param.value * 100;
+void base_write_clap_info(const Param* param, clap_param_info_t* info) {
+    memset(info, 0, sizeof(*info));
+
+    info->id = param->id;
+    snprintf(info->name, sizeof(info->name), "%s", param->name);
+}
+
+bool gain_get_value(const Param* base, double* value) {
+    GainParam* param = (GainParam*) base;
+
+    *value = gain_to_db(param->value);
     return true;
 }
 
-bool gain_display_value(double value, char* display, size_t size) {
+bool percent_get_value(const Param* base, double* value) {
+    PercentParam* param = (PercentParam*) base;
+
+    *value = param->value * 100;
+    return true;
+}
+
+bool float_get_value(const Param* base, double* value) {
+    FloatParam* param = (FloatParam*) base;
+
+    *value = param->value;
+    return true;
+}
+
+bool gain_display_value(const Param* base, double value, char* display, size_t size) {
+    (void) base;
+
     snprintf(display, size, "%0.2f dB", value);
     return true;
 }
 
-bool percent_display_value(double value, char* display, size_t size) {
+bool percent_display_value(const Param* base, double value, char* display, size_t size) {
+    (void) base;
+
     snprintf(display, size, "%0.0f%%", value);
     return true;
 }
 
-bool gain_read_value_from_display(const char* display, double* value) {
+bool float_display_value(const Param* base, double value, char* display, size_t size) {
+    FloatParam* param = (FloatParam*) base;
+
+    snprintf(display, size, "%0.2f%s", value, param->unit);
+    return true;
+}
+
+bool gain_read_value_from_display(const Param* base, const char* display, double* value) {
+    (void) base;
+
     sscanf(display, "%lf dB", value);
     return true;
 }
 
-bool percent_read_value_from_display(const char* display, double* value) {
+bool percent_read_value_from_display(const Param* base, const char* display, double* value) {
+    (void) base;
+
     sscanf(display, "%lf%%", value);
     return true;
 }
 
-void gain_set_value(GainParam* param, float value) {
+bool float_read_value_from_display(const Param* base, const char* display, double* value) {
+    (void) base;
+
+    sscanf(display, "%lf", value); // TODO
+    return true;
+}
+
+void gain_set_value(Param* base, float value) {
+    GainParam* param = (GainParam*) base;
+
     param->value = db_to_gain(value);
 }
 
-void percent_set_value(PercentParam* param, float value) {
+void percent_set_value(Param* base, float value) {
+    PercentParam* param = (PercentParam*) base;
+
     param->value = value * 0.01f;
+}
+
+void float_set_value(Param* base, float value) {
+    FloatParam* param = (FloatParam*) base;
+
+    param->value = value;
 }
