@@ -1,9 +1,7 @@
-// TODO: init and deinit mutexes
-// TODO: free plugin
-// TODO: display parameter name
-// TODO: logarithmic scale for gain parameter
-// TODO: unit support for parameters
-// TODO: process audio
+// TODO: smooth parameter values
+// TODO: state
+// TODO: compressor logic
+// TODO: GUI
 #include <clap/clap.h>
 
 #include <threads.h>
