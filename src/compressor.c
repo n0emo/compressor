@@ -20,12 +20,12 @@ Compressor* compressor_create() {
         .mix = percent_param(PARAM_ID_MIX, "Mix", 1),
     };
 
-    compressor->params.param_map[PARAM_ID_THRESHOLD] = (Param*) &compressor->params.threshold;
-    compressor->params.param_map[PARAM_ID_ATTACK] = (Param*) &compressor->params.attack;
-    compressor->params.param_map[PARAM_ID_RELEASE] = (Param*) &compressor->params.release;
-    compressor->params.param_map[PARAM_ID_RATIO] = (Param*) &compressor->params.ratio;
-    compressor->params.param_map[PARAM_ID_OUTPUT_GAIN] = (Param*) &compressor->params.output_gain;
-    compressor->params.param_map[PARAM_ID_MIX] = (Param*) &compressor->params.mix;
+    compressor->params.map[PARAM_ID_THRESHOLD] = (Param*) &compressor->params.threshold;
+    compressor->params.map[PARAM_ID_ATTACK] = (Param*) &compressor->params.attack;
+    compressor->params.map[PARAM_ID_RELEASE] = (Param*) &compressor->params.release;
+    compressor->params.map[PARAM_ID_RATIO] = (Param*) &compressor->params.ratio;
+    compressor->params.map[PARAM_ID_OUTPUT_GAIN] = (Param*) &compressor->params.output_gain;
+    compressor->params.map[PARAM_ID_MIX] = (Param*) &compressor->params.mix;
 
     return compressor;
 }
@@ -48,6 +48,7 @@ void compressor_process(Compressor* compressor, Buffer* buffer) {
     }
 }
 
+// TODO: handle errors
 void compressor_handle_clap_event(Compressor* compressor, const clap_event_header_t* event_header) {
     switch(event_header->type) {
         case CLAP_EVENT_PARAM_VALUE: {
@@ -56,8 +57,8 @@ void compressor_handle_clap_event(Compressor* compressor, const clap_event_heade
                 break;
             }
 
-            Param* p = compressor->params.param_map[event->param_id];
-            p->methods.set_value(p, event->value);
+            Param* p = compressor->params.map[event->param_id];
+            p->set_value(p, event->value);
         } break;
     }
 }

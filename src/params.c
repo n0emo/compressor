@@ -6,21 +6,15 @@
 #include "util.h"
 
 void params_init_mutexes(CompressorParams* params) {
-    mtx_init(&params->threshold.base.mutex, mtx_plain);
-    mtx_init(&params->attack.base.mutex, mtx_plain);
-    mtx_init(&params->release.base.mutex, mtx_plain);
-    mtx_init(&params->ratio.base.mutex, mtx_plain);
-    mtx_init(&params->output_gain.base.mutex, mtx_plain);
-    mtx_init(&params->mix.base.mutex, mtx_plain);
+    for(size_t i = 0; i < PARAM_ID_COUNT; i++) {
+        mtx_init(&params->map[i]->mutex, mtx_plain);
+    }
 }
 
 void params_destroy_mutexes(CompressorParams* params) {
-    mtx_destroy(&params->threshold.base.mutex);
-    mtx_destroy(&params->attack.base.mutex);
-    mtx_destroy(&params->release.base.mutex);
-    mtx_destroy(&params->ratio.base.mutex);
-    mtx_destroy(&params->output_gain.base.mutex);
-    mtx_destroy(&params->mix.base.mutex);
+    for(size_t i = 0; i < PARAM_ID_COUNT; i++) {
+        mtx_destroy(&params->map[i]->mutex);
+    }
 }
 
 bool params_is_valid_id(clap_id id) {
@@ -32,13 +26,11 @@ FloatParam float_param(ParamId id, const char* name, float default_value, float 
         .base = {
             .id = id,
             .name = name,
-            .methods = {
-                .write_clap_info = float_write_clap_info,
-                .get_value = float_get_value,
-                .set_value = float_set_value,
-                .display_value = float_display_value,
-                .read_value_from_display = float_read_value_from_display,
-            },
+            .write_clap_info = float_write_clap_info,
+            .get_value = float_get_value,
+            .set_value = float_set_value,
+            .display_value = float_display_value,
+            .read_value_from_display = float_read_value_from_display,
         },
         .default_value = default_value,
         .value = default_value,
@@ -57,13 +49,11 @@ GainParam gain_param(ParamId id, const char* name, float default_value, float mi
         .base = {
             .id = id,
             .name = name,
-            .methods = {
-                .write_clap_info = gain_write_clap_info,
-                .get_value = gain_get_value,
-                .set_value = gain_set_value,
-                .display_value = gain_display_value,
-                .read_value_from_display = gain_read_value_from_display,
-            },
+            .write_clap_info = gain_write_clap_info,
+            .get_value = gain_get_value,
+            .set_value = gain_set_value,
+            .display_value = gain_display_value,
+            .read_value_from_display = gain_read_value_from_display,
         },
         .default_value = default_value,
         .value = default_value,
@@ -77,13 +67,11 @@ PercentParam percent_param(ParamId id, const char* name, float default_value) {
         .base = {
             .id = id,
             .name = name,
-            .methods = {
-                .write_clap_info = percent_write_clap_info,
-                .get_value = percent_get_value,
-                .set_value = percent_set_value,
-                .display_value = percent_display_value,
-                .read_value_from_display = percent_read_value_from_display,
-            },
+            .write_clap_info = percent_write_clap_info,
+            .get_value = percent_get_value,
+            .set_value = percent_set_value,
+            .display_value = percent_display_value,
+            .read_value_from_display = percent_read_value_from_display,
         },
         .default_value = default_value,
         .value = default_value,

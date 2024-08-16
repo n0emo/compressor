@@ -284,8 +284,8 @@ bool params_get_info(const clap_plugin_t* plugin, uint32_t index, clap_param_inf
         return false;
     }
 
-    Param* p = compressor->params.param_map[id];
-    return p->methods.write_clap_info(p, info);
+    Param* p = compressor->params.map[id];
+    return p->write_clap_info(p, info);
 }
 
 bool plugin_params_get_value(const clap_plugin_t* plugin, clap_id id, double* value) {
@@ -296,8 +296,8 @@ bool plugin_params_get_value(const clap_plugin_t* plugin, clap_id id, double* va
         return false;
     }
 
-    Param* p = compressor->params.param_map[id];
-    return p->methods.get_value(p, value);
+    Param* p = compressor->params.map[id];
+    return p->get_value(p, value);
 }
 
 bool params_value_to_text(const clap_plugin_t* plugin, clap_id id, double value, char * display, uint32_t size) {
@@ -308,8 +308,8 @@ bool params_value_to_text(const clap_plugin_t* plugin, clap_id id, double value,
         return false;
     }
 
-    Param* p = compressor->params.param_map[id];
-    return p->methods.display_value(p, value, display, size);
+    Param* p = compressor->params.map[id];
+    return p->display_value(p, value, display, size);
 }
 
 bool params_text_to_value(const clap_plugin_t* plugin, clap_id id, const char* display, double* value) {
@@ -320,6 +320,6 @@ bool params_text_to_value(const clap_plugin_t* plugin, clap_id id, const char* d
         return false;
     }
 
-    Param* p = compressor->params.param_map[id];
-    return p->methods.read_value_from_display(p, display, value);
+    Param* p = compressor->params.map[id];
+    return p->read_value_from_display(p, display, value);
 }

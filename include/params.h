@@ -20,19 +20,15 @@ typedef bool param_display_value_t(const Param* param, double value, char* displ
 typedef bool param_read_value_from_display_t(const Param* param, const char* display, double* value);
 typedef void param_set_value_t(Param* param, float value);
 
-typedef struct ParamMethods {
+typedef struct Param {
+    clap_id id;
+    const char* name;
+    mtx_t mutex;
     param_write_clap_info_t* write_clap_info;
     param_get_value_t* get_value;
     param_display_value_t* display_value;
     param_read_value_from_display_t* read_value_from_display;
     param_set_value_t* set_value;
-} ParamMethods;
-
-typedef struct Param {
-    clap_id id;
-    const char* name;
-    mtx_t mutex;
-    ParamMethods methods;
 } Param;
 
 typedef struct FloatParam {
@@ -69,7 +65,7 @@ typedef struct CompressorParams {
     GainParam output_gain;
     PercentParam mix;
 
-    Param* param_map[PARAM_ID_COUNT];
+    Param* map[PARAM_ID_COUNT];
 } CompressorParams;
 
 void params_init_mutexes(CompressorParams* params);
