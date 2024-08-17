@@ -10,8 +10,9 @@ typedef enum ParamId {
     PARAM_ID_RATIO,
     PARAM_ID_OUTPUT_GAIN,
     PARAM_ID_MIX,
+    PARAM_ID_INTERPOLATOR, // TODO: only for testing
 } ParamId;
-#define PARAM_ID_COUNT 6
+#define PARAM_ID_COUNT 7
 
 typedef struct Param Param;
 typedef bool param_write_clap_info_t(const Param* param, clap_param_info_t* info);
@@ -58,12 +59,13 @@ typedef struct PercentParam {
 } PercentParam;
 
 typedef struct CompressorParams {
-    GainParam threshold;
+    FloatParam threshold;
     FloatParam attack;
     FloatParam release;
     FloatParam ratio;
     GainParam output_gain;
     PercentParam mix;
+    FloatParam interpolator;
 
     Param* map[PARAM_ID_COUNT];
 } CompressorParams;
