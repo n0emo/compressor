@@ -4,19 +4,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include <threads.h>
 #include <assert.h>
 #include <math.h>
 
 #ifndef M_E
-#   define M_E 2.7182818284590452354
+    #define M_E 2.7182818284590452354
 #endif
 
 #include "util.h"
 
-
-Compressor* compressor_create() {
-    Compressor* compressor = calloc(1, sizeof(*compressor));
+Compressor *compressor_create() {
+    Compressor *compressor = calloc(1, sizeof(*compressor));
 
     compressor->params = (CompressorParams) {
         .threshold = float_param(PARAM_ID_THRESHOLD, "Threshold", 0.0f, -30.0f, 10.0f, " dB"),
@@ -28,18 +26,18 @@ Compressor* compressor_create() {
         .interpolator = float_param(PARAM_ID_INTERPOLATOR, "Interpolator", 0.0f, 0.0f, 1.0f, ""),
     };
 
-    compressor->params.map[PARAM_ID_THRESHOLD] = (Param*) &compressor->params.threshold;
-    compressor->params.map[PARAM_ID_ATTACK] = (Param*) &compressor->params.attack;
-    compressor->params.map[PARAM_ID_RELEASE] = (Param*) &compressor->params.release;
-    compressor->params.map[PARAM_ID_RATIO] = (Param*) &compressor->params.ratio;
-    compressor->params.map[PARAM_ID_OUTPUT_GAIN] = (Param*) &compressor->params.output_gain;
-    compressor->params.map[PARAM_ID_MIX] = (Param*) &compressor->params.mix;
-    compressor->params.map[PARAM_ID_INTERPOLATOR] = (Param*) &compressor->params.interpolator;
+    compressor->params.map[PARAM_ID_THRESHOLD] = (Param *)&compressor->params.threshold;
+    compressor->params.map[PARAM_ID_ATTACK] = (Param *)&compressor->params.attack;
+    compressor->params.map[PARAM_ID_RELEASE] = (Param *)&compressor->params.release;
+    compressor->params.map[PARAM_ID_RATIO] = (Param *)&compressor->params.ratio;
+    compressor->params.map[PARAM_ID_OUTPUT_GAIN] = (Param *)&compressor->params.output_gain;
+    compressor->params.map[PARAM_ID_MIX] = (Param *)&compressor->params.mix;
+    compressor->params.map[PARAM_ID_INTERPOLATOR] = (Param *)&compressor->params.interpolator;
 
     return compressor;
 }
 
-void compressor_process(Compressor* compressor, Buffer* buffer) {
+void compressor_process(Compressor *compressor, Buffer *buffer) {
     const float output_gain = compressor->params.output_gain.value;
     const float mix = compressor->params.mix.value;
 
@@ -57,14 +55,14 @@ void compressor_process(Compressor* compressor, Buffer* buffer) {
         for (size_t channel = 0; channel < buffer->channel_count; channel++) {
             const float input = buffer->data[channel][i];
             const float output = input * gain * output_gain;
-            buffer->data[channel][i] = lerp(input, output, mix); 
+            buffer->data[channel][i] = lerp(input, output, mix);
 
             compressor->params.interpolator.value = compressor->interpolator;
         }
     }
 }
 
-void compressor_process_sidechain(Compressor* compressor) {
+void compressor_process_sidechain(Compressor *compressor) {
     compressor->rms_index++;
     if (compressor->rms_index >= RMS_WINDOW_SIZE) {
         compressor->rms_index = 0;
@@ -80,19 +78,19 @@ void compressor_process_sidechain(Compressor* compressor) {
     compressor->side_output = sqrt(sum / RMS_WINDOW_SIZE);
 }
 
-void compressor_start_attack(Compressor* compressor) {
+void compressor_start_attack(Compressor *compressor) {
     const float attack = compressor->params.attack.value;
     compressor->state = COMPRESSOR_ATTACKING;
     compressor->step = 1.0f / (attack * 0.001f * compressor->sample_rate);
 }
 
-void compressor_start_release(Compressor* compressor) {
+void compressor_start_release(Compressor *compressor) {
     const float release = compressor->params.attack.value;
     compressor->state = COMPRESSOR_RELEASING;
     compressor->step = 1.0f / (release * 0.001f * compressor->sample_rate);
 }
 
-void compressor_process_state(Compressor* compressor) {
+void compressor_process_state(Compressor *compressor) {
     const float threshold = compressor->params.threshold.value;
     const float level = gain_to_db(compressor->side_output);
 
@@ -131,7 +129,7 @@ void compressor_process_state(Compressor* compressor) {
 }
 
 // TODO: soft knee
-float compressor_process_gain(Compressor* compressor) {
+float compressor_process_gain(Compressor *compressor) {
     const float ratio = compressor->params.ratio.value;
     const float threshold = compressor->params.threshold.value;
     const float final_ratio = lerp(1.0f, ratio, compressor->interpolator);
@@ -139,7 +137,7 @@ float compressor_process_gain(Compressor* compressor) {
 
     float gain = 0;
     if (level >= threshold) {
-        const float sub = level - threshold ;
+        const float sub = level - threshold;
         gain = sub / final_ratio - sub;
     }
 
@@ -147,15 +145,15 @@ float compressor_process_gain(Compressor* compressor) {
 }
 
 // TODO: handle errors
-void compressor_handle_clap_event(Compressor* compressor, const clap_event_header_t* event_header) {
-    switch(event_header->type) {
+void compressor_handle_clap_event(Compressor *compressor, const clap_event_header_t *event_header) {
+    switch (event_header->type) {
         case CLAP_EVENT_PARAM_VALUE: {
-            const clap_event_param_value_t* event = (const clap_event_param_value_t*) event_header;
-            if(!params_is_valid_id(event->param_id)) {
+            const clap_event_param_value_t *event = (const clap_event_param_value_t *)event_header;
+            if (!params_is_valid_id(event->param_id)) {
                 break;
             }
 
-            Param* p = compressor->params.map[event->param_id];
+            Param *p = compressor->params.map[event->param_id];
             p->set_value(p, event->value);
         } break;
     }

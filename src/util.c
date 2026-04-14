@@ -17,4 +17,3 @@ float gain_to_db(float gain) {
 float lerp(float a, float b, float t) {
     return a * (1 - t) + b * t;
 }
-

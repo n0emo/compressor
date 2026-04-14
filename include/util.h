@@ -1,3 +1,6 @@
+#ifndef INCLUDE_UTIL_H_
+#define INCLUDE_UTIL_H_
+
 #define max(a, b) (a > b ? a : b)
 
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
@@ -10,3 +13,4 @@ float db_to_gain(float dbs);
 float gain_to_db(float gain);
 float lerp(float a, float b, float t);
 
+#endif // INCLUDE_UTIL_H_
